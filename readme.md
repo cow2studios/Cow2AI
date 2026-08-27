@@ -6,7 +6,7 @@ The core objective is to pre-train a highly efficient foundational model on C++ 
 
 ## Architecture Specifications
 
-### Base Model (750M)
+### Base Model (692M)
 
 - **Context Window:** 8,192 tokens
 - **Positional Encoding:** Rotary Position Embeddings (RoPE)
@@ -39,6 +39,12 @@ source slm_env/bin/activate  # On Windows: slm_env\Scripts\activate
 pip install -r requirements.txt
 huggingface-cli login
 ```
+
+## Model Loss Graph
+
+<!-- ![loss_graph.png](loss_graph.png) -->
+<img src="loss_graph.png" alt="Loss Graph" width="1800" height="900" align="center">
+
 
 ## License
 
