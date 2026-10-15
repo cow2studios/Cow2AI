@@ -1,3 +1,4 @@
+
 import os
 import glob
 import torch
@@ -6,6 +7,7 @@ from transformers import (
     PreTrainedTokenizerFast,
     LlamaConfig,
     LlamaForCausalLM,
+    
     Trainer,
     TrainingArguments,
     DataCollatorForLanguageModeling,
@@ -22,24 +24,21 @@ def build_model():
         num_key_value_heads=4,
         max_position_embeddings=8192,
         bos_token_id=0,
+        
         eos_token_id=2,
         pad_token_id=1,
     )
 
-    print("Initializing model architecture...")
     model = LlamaForCausalLM(config)
-
     model.gradient_checkpointing_enable()
     return model
 
 
-def prepare_dataset(tokenizer, max_length):
+def prepare_dataset(tokenizer, max_length=4096):
     dataset = load_dataset(
-        "bigcode/the-stack-smol",
+        "codeparrot/codeparrot-clean",
         split="train",
-        data_dir="data/python",
         streaming=True,
-        token=True,
     )
 
     def tokenize_function(examples):
@@ -53,30 +52,28 @@ def prepare_dataset(tokenizer, max_length):
     tokenized_dataset = dataset.map(
         tokenize_function,
         batched=True,
-        remove_columns=["content", "repository_name", "path", "size", "license"],
     )
+
     return tokenized_dataset
 
 
 def main():
-    tokenizer_path = os.path.join(
-        os.path.dirname(__file__), "../models/base_tokenizer/code-bpe-tokenizer.json"
+    tokenizer_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "../models/base_tokenizer/code-bpe-tokenizer.json",
+        )
     )
     output_dir = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../models/base_750m")
+        os.path.join(os.path.dirname(__file__), "../models/phase1_base_750m")
     )
 
-    print("Loading custom BPE tokenizer...")
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
     tokenizer.pad_token = "<|pad|>"
 
     model = build_model()
 
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total Model Parameters: {total_params / 1e6:.2f}M")
-
     train_dataset = prepare_dataset(tokenizer=tokenizer, max_length=4096)
-
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
     training_args = TrainingArguments(
@@ -107,15 +104,13 @@ def main():
 
     if checkpoints:
         latest_checkpoint = max(checkpoints, key=lambda x: int(x.split("-")[-1]))
-        print(f"Resuming training from {latest_checkpoint}...")
         trainer.train(resume_from_checkpoint=latest_checkpoint)
     else:
-        print("Starting fresh pre-training run...")
         trainer.train()
 
-    print("Training complete. Saving final base model...")
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
+    final_model_path = os.path.join(output_dir, "final_model")
+    trainer.save_model(final_model_path)
+    tokenizer.save_pretrained(final_model_path)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 
 
-def plot_training_loss(json_path, output_image_path):
+def plot_training_loss(json_path, output_image_path, step):
     # Load training history from trainer_state.json
     with open(json_path, "r") as f:
         data = json.load(f)
@@ -38,7 +38,7 @@ def plot_training_loss(json_path, output_image_path):
             ha="left",
         )
         plt.annotate(
-            f"Step 10000: {losses[-1]:.2f}",
+            f"Step {step}: {losses[-1]:.2f}",
             (steps[-1], losses[-1]),
             textcoords="offset points",
             xytext=(-15, 10),
@@ -51,9 +51,11 @@ def plot_training_loss(json_path, output_image_path):
 
 
 if __name__ == "__main__":
+    step = 6000
+    
     checkpoint_json = os.path.abspath(
-        "models/base_750m/checkpoint-10000/trainer_state.json"
+        f"models/phase1_base_750m/checkpoint-{step}/trainer_state.json"
     )
-    output_png = os.path.abspath("models/base_750m/loss_graph.png")
+    output_png = os.path.abspath("models/base_750m_loss_graph.png")
 
-    plot_training_loss(checkpoint_json, output_png)
+    plot_training_loss(checkpoint_json, output_png, step)
